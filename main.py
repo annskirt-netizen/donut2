@@ -11,7 +11,7 @@ st.title("영화 데이터 그래프 도감 2 - 분포와 관계")
 # 데이터 로드 및 전처리
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
+    url = "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.csv"
     df = pd.read_csv(url)
 
     # 장르 전처리: 세로막대 기호(|)로 구분된 경우 첫 번째 장르만 추출
