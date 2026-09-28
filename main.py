@@ -145,3 +145,96 @@ with st.container():
     st.info(
         "💡 **이 그래프로 알 수 있는 것:** 초기 스크린 확보 수(개봉일 스크린 수)가 많을수록 대체로 최종 관객 수가 높아지는 양의 상관관계를 확인해 볼 수 있습니다."
     )
+
+st.markdown("---")
+
+# 5. 주요 장르별 총 관객 수 분포 (상자 그림)
+st.subheader("5. 주요 장르별 총 관객 수 분포 (10편 이상 장르)")
+
+# 영화가 10편 이상인 장르만 필터링
+genre_counts_all = df["genre"].value_counts()
+major_genres = genre_counts_all[genre_counts_all >= 10].index
+df_major = df[df["genre"].isin(major_genres)]
+
+# 상자 그림 생성
+fig5 = px.box(
+    df_major,
+    x="genre",
+    y="total_audi",
+    hover_name="movieNm",
+    points="outliers",
+    title="장르별 총 관객 수 상자 그림 및 이상치",
+    labels={"genre": "장르", "total_audi": "총 관객 수(명)"},
+)
+
+fig5.update_traces(
+    hovertemplate="<b>영화명: %{hovertext}</b><br>총 관객 수: %{y:,}명<extra></extra>"
+)
+
+st.plotly_chart(fig5, use_container_width=True)
+
+# 다섯 번째 그래프 해석 구역
+with st.container():
+    st.info(
+        "💡 **이 그래프로 알 수 있는 것:** 주요 장르별 관객 수의 중앙값과 범위를 비교할 수 있으며, 박스 바깥의 이상치 점을 통해 해당 장르에서 초대형 흥행을 기록한 대표 작품을 식별할 수 있습니다."
+    )
+
+st.markdown("---")
+
+# 6. 개봉일 스크린 수 vs 총 관객 수 + 첫 주 관객 수 (버블 차트)
+st.subheader("6. 개봉일 스크린 수, 총 관객 수, 첫 주 관객 수의 관계 (버블 차트)")
+
+# 버블 차트 생성 (크기: 개봉 첫 주 관객 수)
+fig6 = px.scatter(
+    df,
+    x="first_scrn",
+    y="total_audi",
+    size="first_week_audi",
+    color="genre",
+    hover_name="movieNm",
+    size_max=40,
+    title="개봉일 스크린 수 vs 총 관객 수 (점 크기: 첫 주 관객 수)",
+    labels={
+        "first_scrn": "개봉일 스크린 수(개)",
+        "total_audi": "총 관객 수(명)",
+        "first_week_audi": "첫 주 관객 수(명)",
+        "genre": "장르",
+    },
+    custom_data=["first_week_audi"],
+)
+
+fig6.update_traces(
+    hovertemplate="<b>영화명: %{hovertext}</b><br>개봉일 스크린 수: %{x:,}개<br>첫 주 관객 수: %{customdata[0]:,}명<br>총 관객 수: %{y:,}명<extra></extra>"
+)
+
+st.plotly_chart(fig6, use_container_width=True)
+
+# 여섯 번째 그래프 해석 구역
+with st.container():
+    st.info(
+        "💡 **이 그래프로 알 수 있는 것:** 개봉일 스크린 수와 총 관객 수 외에도 원의 크기(개봉 첫 주 관객 수)를 통해 초반 흥행 폭발력이 최종 관객 수에 미치는 영향력을 한눈에 파악할 수 있습니다."
+    )
+
+st.markdown("---")
+
+# 7. 제작 국가 및 장르별 영화 편수 (선버스트 차트)
+st.subheader("7. 제작 국가 및 장르별 영화 편수 분포")
+
+# 국가 -> 장르 계층 구조로 선버스트 차트 생성 (크기: 영화 편수)
+fig7 = px.sunburst(
+    df,
+    path=["nation", "genre"],
+    title="제작 국가 및 장르별 영화 편수 비율",
+)
+
+fig7.update_traces(
+    hovertemplate="<b>카테고리: %{label}</b><br>영화 수: %{value}편<br>비율: %{percentParent:.1%}<extra></extra>"
+)
+
+st.plotly_chart(fig7, use_container_width=True)
+
+# 일곱 번째 그래프 해석 구역
+with st.container():
+    st.info(
+        "💡 **이 그래프로 알 수 있는 것:** 국가별 영화 제작/수입 비중과 각 국가 내에서 어떤 장르의 영화가 주로 제작·개봉되었는지 계층적으로 비교해 볼 수 있습니다."
+    )
