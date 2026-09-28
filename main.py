@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -12,7 +11,7 @@ st.title("영화 데이터 그래프 도감 2 - 분포와 관계")
 # 데이터 로드 및 전처리
 @st.cache_data
 def load_data():
-    url = "https://raw.githubusercontent.com/greatsong/modudata/main/data/kobis_movies.csv"
+    url = "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.csv"
     df = pd.read_csv(url)
 
     # 장르 전처리: 세로막대 기호(|)로 구분된 경우 첫 번째 장르만 추출
@@ -242,86 +241,46 @@ with st.container():
 
 st.markdown("---")
 
-# 8. 영화별 평론가 평 군집화 (가상 텍스트 임베딩 차트)
+# 8. 개봉 스크린 수 1개당 평균 관객 수 분석 (스카터/스트립 플롯)
 title_q8 = (
-    "8. 각 영화별로 평론가들이 했던 말을 비슷한것 위주로 분리해서 나타내줘"
+    "8. 개봉 스크린 수 1개당 평균 몇 명의 관객을 동원했을까? (스크린 효율성 분석)"
 )
 st.subheader(title_q8)
 
+# 스크린당 관객 수 지표 계산 (total_audi / first_scrn)
+df_efficiency = df.copy()
+df_efficiency["audi_per_scrn"] = (
+    df_efficiency["total_audi"] / df_efficiency["first_scrn"]
+).round(1)
 
-# 영화별로 동일한 개수(각 5개)의 가상 평론 생성 및 2차원 유사도 좌표 시뮬레이션
-@st.cache_data
-def generate_review_clusters(df):
-    np.random.seed(42)  # 재현성을 위한 시드 고정
-    reviews_data = []
-
-    # 4가지 평론 유형 그룹
-    cluster_labels = [
-        "연출 및 연기 호평",
-        "스토리 및 개연성 아쉬움",
-        "비주얼 및 오락성 극찬",
-        "대중성 부족 및 호불호",
-    ]
-
-    for _, row in df.iterrows():
-        movie_name = row["movieNm"]
-        genre = row["genre"]
-
-        # 영화당 동일하게 5개의 평론 생성
-        for i in range(5):
-            cluster_id = np.random.choice([0, 1, 2, 3])
-            cluster_name = cluster_labels[cluster_id]
-
-            # 클러스터 중심점 주변으로 2차원 유사도 좌표 생성 (PCA/t-SNE 시뮬레이션)
-            centers = [(-2, 2), (2, 2), (-2, -2), (2, -2)]
-            cx, cy = centers[cluster_id]
-            x = cx + np.random.normal(0, 0.6)
-            y = cy + np.random.normal(0, 0.6)
-
-            reviews_data.append(
-                {
-                    "movieNm": movie_name,
-                    "genre": genre,
-                    "review_num": i + 1,
-                    "cluster": cluster_name,
-                    "x": x,
-                    "y": y,
-                }
-            )
-
-    return pd.DataFrame(reviews_data)
-
-
-df_reviews = generate_review_clusters(df)
-
-# 산점도 생성
-fig8 = px.scatter(
-    df_reviews,
-    x="x",
-    y="y",
-    color="cluster",
+# 범주형 산점도(Strip Plot) 형태로 생성
+fig8 = px.strip(
+    df_efficiency,
+    x="genre",
+    y="audi_per_scrn",
+    color="genre",
     hover_name="movieNm",
     title=title_q8,
     labels={
-        "x": "평론 유사도 차원 1",
-        "y": "평론 유사도 차원 2",
-        "cluster": "평론 유의군(그룹)",
+        "genre": "장르",
+        "audi_per_scrn": "스크린당 관객 수(명/개)",
     },
-    custom_data=["review_num", "genre"],
+    custom_data=["first_scrn", "total_audi"],
 )
 
 fig8.update_traces(
-    hovertemplate="<b>영화명: %{hovertext}</b><br>장르: %{customdata[1]}<br>평론 번호: #%{customdata[0]}<br>평론 유형: %{marker.color}<extra></extra>"
+    hovertemplate="<b>영화명: %{hovertext}</b><br>장르: %{x}<br>스크린당 관객 수: %{y:,.1f}명<br>개봉일 스크린 수: %{customdata[0]:,}개<br>총 관객 수: %{customdata[1]:,}명<extra></extra>"
 )
 
-# 축 눈금 숨기기 (유사도 공간 연출)
-fig8.update_xaxes(showticklabels=False)
-fig8.update_yaxes(showticklabels=False)
-
 st.plotly_chart(fig8, use_container_width=True)
+
+# 가장 스크린 효율성이 높은 영화 계산
+top_eff_movie = df_efficiency.loc[df_efficiency["audi_per_scrn"].idxmax()]
+top_eff_title = top_eff_movie["movieNm"]
+top_eff_val = f"{top_eff_movie['audi_per_scrn']:,}명"
 
 # 여덟 번째 그래프 해석 구역
 with st.container():
     st.info(
-        "💡 **이 그래프로 알 수 있는 것:** 각 영화별 동일한 개수의 평론 데이터를 유사도에 따라 2차원 공간에 군집화하여, 비슷한 성격의 평론끼리 유의미하게 묶여 있는 분포 형태를 확인할 수 있습니다."
+        f"💡 **이 그래프로 알 수 있는 것:** 개봉일 스크린 수 대비 관객 동원력(스크린 효율성)이 가장 우수했던 영화들을 파악할 수 있으며, 가장 높은 스크린 효율을 기록한 영화는 **'{top_eff_title}'** (스크린당 {top_eff_val})입니다."
     )
